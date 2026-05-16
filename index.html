@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Baisangur</title>
+
+  <!-- PWA / iPhone home screen -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Baisangur" />
+  <meta name="theme-color" content="#1a3d2e" />
+
+  <!-- App icon (green B, inline SVG as data-url) -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%231a3d2e'/%3E%3Ctext x='90' y='125' font-family='Arial Black,sans-serif' font-size='110' font-weight='900' fill='%2322c55e' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #f0f7f4; }
+    body {
+      font-family: 'Nunito', sans-serif;
+      color: #1a2e26;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+    }
+    #root { max-width: 480px; margin: 0 auto; min-height: 100vh; }
+
+    /* safe-area padding for iPhone notch */
+    .header {
+      background: linear-gradient(135deg, #1a3d2e 0%, #1e4d5a 100%);
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 16px rgba(30,77,90,0.2);
+      padding-top: env(safe-area-inset-top);
+    }
+    .header-inner {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px 8px;
+    }
+    .logo-area { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, #4ade80, #22c55e);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 20px; color: #fff;
+      box-shadow: 0 2px 8px rgba(74,222,128,0.4);
+      flex-shrink: 0;
+    }
+    .logo-name { font-weight: 800; font-size: 15px; letter-spacing: 3px; color: #fff; }
+    .logo-sub  { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 2px; }
+    .date-chip {
+      font-size: 11px; color: rgba(255,255,255,0.65);
+      background: rgba(255,255,255,0.1);
+      padding: 4px 10px; border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.15);
+      white-space: nowrap;
+    }
+    .tab-bar {
+      display: flex; gap: 2px; padding: 0 8px 10px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      background: transparent; border: none; color: rgba(255,255,255,0.5);
+      padding: 8px 12px; border-radius: 8px; cursor: pointer;
+      font-size: 13px; white-space: nowrap; font-family: 'Nunito', sans-serif;
+      font-weight: 600; transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: rgba(255,255,255,0.13); color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .content {
+      padding: 14px 12px;
+      padding-bottom: calc(14px + env(safe-area-inset-bottom));
+      background: linear-gradient(160deg, #f0f7f4 0%, #e8f4fd 55%, #f5fffe 100%);
+      min-height: calc(100vh - 110px);
+    }
+    .section { display: flex; flex-direction: column; gap: 12px; }
+
+    .card {
+      background: #fff; border: 1px solid #e2eeea;
+      border-radius: 16px; padding: 16px;
+      box-shadow: 0 2px 12px rgba(30,77,90,0.07);
+    }
+    .card-title {
+      font-size: 14px; font-weight: 700; color: #1e4d5a;
+      margin-bottom: 12px; letter-spacing: 0.3px;
+    }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card {
+      background: #fff; border: 1px solid #e2eeea;
+      border-radius: 12px; padding: 12px 14px;
+      box-shadow: 0 1px 6px rgba(30,77,90,0.06);
+    }
+    .stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #7a9e94; }
+    .stat-value { font-size: 22px; font-weight: 800; margin-top: 5px; }
+    .stat-unit  { font-size: 12px; margin-left: 2px; }
+
+    .row { display: flex; gap: 8px; }
+    input, select, textarea {
+      flex: 1; background: #f4faf7; border: 1.5px solid #cce8dc;
+      border-radius: 10px; padding: 10px 12px; color: #1a2e26;
+      font-size: 14px; outline: none; font-family: 'Nunito', sans-serif;
+      -webkit-appearance: none; appearance: none;
+    }
+    textarea { resize: vertical; min-height: 78px; }
+    input::placeholder, textarea::placeholder { color: #a3b8af; }
+
+    .btn {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border: none; border-radius: 10px; padding: 10px 16px;
+      color: #fff; font-weight: 700; cursor: pointer;
+      font-size: 14px; white-space: nowrap;
+      font-family: 'Nunito', sans-serif;
+      box-shadow: 0 2px 8px rgba(34,197,94,0.3);
+    }
+    .btn:active { opacity: 0.85; transform: scale(0.97); }
+    .btn-sm { padding: 7px 11px; font-size: 12px; }
+    .btn-full { width: 100%; margin-top: 8px; }
+    .btn-red   { background: #ef4444; box-shadow: 0 2px 8px rgba(239,68,68,0.3); }
+    .btn-green-dark { background: #16a34a; }
+
+    .income-display { margin-top: 10px; color: #16a34a; font-size: 20px; font-weight: 800; text-align: center; }
+
+    .exp-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 0; border-bottom: 1px solid #edf5f1;
+    }
+    .exp-cat {
+      background: #e8f5e9; color: #15803d; font-size: 11px;
+      padding: 2px 8px; border-radius: 12px; white-space: nowrap; font-weight: 700;
+    }
+    .exp-note { flex: 1; color: #7a9e94; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .exp-date { color: #a3b8af; font-size: 11px; white-space: nowrap; }
+    .exp-amount { color: #ef4444; font-weight: 700; font-size: 14px; white-space: nowrap; }
+    .del-btn {
+      background: none; border: none; color: #c4d4cc;
+      font-size: 19px; line-height: 1; cursor: pointer; flex-shrink: 0; padding: 0 3px;
+    }
+
+    .tip-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #edf5f1; }
+    .tip-num {
+      background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+      color: #fff; width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; flex-shrink: 0;
+      box-shadow: 0 1px 4px rgba(14,165,233,0.3);
+    }
+    .tip-text { color: #2d4a3e; font-size: 14px; line-height: 1.45; }
+    .tip-placeholder { color: #a3b8af; font-size: 14px; text-align: center; padding: 12px 0; }
+
+    .task-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #edf5f1; }
+    .check-btn {
+      width: 24px; height: 24px; border-radius: 7px;
+      border: 2px solid #cce8dc; background: transparent;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: transparent; font-size: 14px; flex-shrink: 0; transition: all 0.15s;
+    }
+    .check-btn.done { background: #22c55e; border-color: #22c55e; color: #fff; box-shadow: 0 1px 6px rgba(34,197,94,0.4); }
+    .task-text { flex: 1; color: #2d4a3e; font-size: 14px; font-weight: 500; }
+    .task-text.done { text-decoration: line-through; color: #a3b8af; }
+    .task-date { color: #a3b8af; font-size: 11px; }
+
+    .progress-wrap { margin-top: 10px; position: relative; background: #e8f4f0; border-radius: 4px; height: 5px; overflow: hidden; }
+    .progress-bar  { height: 100%; border-radius: 4px; transition: width 0.4s; }
+    .progress-text { color: #a3b8af; font-size: 11px; text-align: right; margin-top: 4px; }
+
+    .habit-row { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #edf5f1; }
+    .habit-info { flex: 1; min-width: 0; }
+    .habit-name { color: #1a2e26; font-weight: 600; font-size: 14px; }
+    .habit-sub  { color: #8aab9e; font-size: 12px; margin-top: 1px; }
+    .streak-badge {
+      background: rgba(239,68,68,0.1); color: #ef4444;
+      font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 12px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .streak-badge.good { background: rgba(34,197,94,0.12); color: #16a34a; }
+
+    .idea-card { position: relative; }
+    .idea-title { color: #1a2e26; font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+    .idea-body  { color: #5a7a6e; font-size: 14px; line-height: 1.5; }
+    .idea-date  { color: #a3b8af; font-size: 12px; margin-top: 8px; }
+    .star-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #ccd8d3; flex-shrink: 0; }
+    .star-btn.starred { color: #22c55e; }
+
+    .empty-hint { color: #b8cdc6; font-size: 13px; text-align: center; padding: 16px 0; }
+    .loading {
+      background: linear-gradient(160deg,#f0f7f4,#e8f4fd);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    }
+    .loading span { color: #22c55e; font-size: 18px; letter-spacing: 4px; font-weight: 800; }
+
+    .expenses-list { max-height: 260px; overflow-y: auto; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .icon-actions { display: flex; gap: 6px; margin-left: 10px; }
+
+    /* tap feedback */
+    button:active { opacity: 0.8; }
+  </style>
+</head>
+<body>
+<div id="root"><div class="loading"><span>ЗАГРУЗКА...</span></div></div>
+
+<script>
+// ─── Storage (localStorage) ───────────────────────────────────────────────────
+const KEYS = { expenses:'bai_expenses', income:'bai_income', tasks:'bai_tasks', badHabits:'bai_bad_habits', goodHabits:'bai_good_habits', ideas:'bai_ideas' };
+const load = k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } };
+const save = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+const todayStr = () => new Date().toISOString().split('T')[0];
+const weekStart = () => { const d=new Date(); d.setDate(d.getDate()-d.getDay()+1); return d.toISOString().split('T')[0]; };
+const monthStart = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; };
+const fmtDate = iso => new Date(iso).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+const fmtNum = n => Math.round(n).toLocaleString('ru-RU');
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let state = {
+  tab: 'finance',
+  expenses: load(KEYS.expenses) || [],
+  income:   load(KEYS.income)   || 0,
+  tasks:    load(KEYS.tasks)    || {day:[],week:[],month:[],year:[]},
+  badHabits:  load(KEYS.badHabits)  || [],
+  goodHabits: load(KEYS.goodHabits) || [],
+  ideas:    load(KEYS.ideas)    || [],
+  aiTips: [], loadingTips: false,
+  expInput: {amount:'',category:'Еда',note:''},
+  incomeInput: '',
+  taskInput: {day:'',week:'',month:'',year:''},
+  badInput:'', goodInput:'',
+  ideaInput:{title:'',body:''},
+};
+
+function setState(patch) { Object.assign(state, patch); render(); }
+
+function persistAll() {
+  save(KEYS.expenses,  state.expenses);
+  save(KEYS.income,    state.income);
+  save(KEYS.tasks,     state.tasks);
+  save(KEYS.badHabits, state.badHabits);
+  save(KEYS.goodHabits,state.goodHabits);
+  save(KEYS.ideas,     state.ideas);
+}
+
+// ─── Finance helpers ──────────────────────────────────────────────────────────
+function calcFinance() {
+  const ts=todayStr(), ws=weekStart(), ms=monthStart();
+  const sum = arr => arr.reduce((s,e)=>s+e.amount,0);
+  const expToday = sum(state.expenses.filter(e=>e.date===ts));
+  const expWeek  = sum(state.expenses.filter(e=>e.date>=ws));
+  const expMonth = sum(state.expenses.filter(e=>e.date>=ms));
+  const daysIn   = new Date().getDate();
+  const dailyAvg = daysIn>0 ? expMonth/daysIn : 0;
+  const daysInFull = new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
+  const daysLeft = daysInFull - daysIn;
+  const forecast = expMonth + dailyAvg*daysLeft;
+  const savings  = state.income>0 ? Math.max(0, state.income-forecast) : 0;
+  const dailySav = savings/30;
+  const daysEnough = state.income>0&&dailyAvg>0 ? Math.round(state.income/dailyAvg) : null;
+  return {expToday,expWeek,expMonth,dailyAvg,forecast,savings,dailySav,daysEnough};
+}
+
+// ─── AI Tips ──────────────────────────────────────────────────────────────────
+async function fetchAiTips() {
+  if(state.loadingTips) return;
+  setState({loadingTips:true});
+  const {expMonth} = calcFinance();
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:1000,
+        messages:[{role:'user',content:`Ты финансовый советник. Дай 3 конкретных, персонализированных совета по экономии и заработку.
+Данные: доход=${state.income}₽/мес, расходы за месяц=${expMonth}₽, категории: ${JSON.stringify(state.expenses.slice(-10))}.
+Отвечай на русском, кратко. Верни ТОЛЬКО JSON: {"tips":["совет1","совет2","совет3"]}`}]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content||[]).map(c=>c.text||'').join('');
+    const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+    setState({aiTips: parsed.tips||[], loadingTips:false});
+  } catch {
+    setState({aiTips:['Ошибка загрузки. Попробуй ещё раз.'], loadingTips:false});
+  }
+}
+
+// ─── Event handlers ───────────────────────────────────────────────────────────
+window._h = {
+  setTab: t => setState({tab:t}),
+
+  setIncomeInput: v => setState({incomeInput:v}),
+  saveIncome: () => {
+    const v=parseFloat(state.incomeInput);
+    if(!isNaN(v)&&v>0){state.income=v; save(KEYS.income,v);}
+    setState({incomeInput:''});
+  },
+
+  setExpAmount:   v => setState({expInput:{...state.expInput,amount:v}}),
+  setExpCat:      v => setState({expInput:{...state.expInput,category:v}}),
+  setExpNote:     v => setState({expInput:{...state.expInput,note:v}}),
+  addExpense: () => {
+    const a=parseFloat(state.expInput.amount);
+    if(isNaN(a)||a<=0) return;
+    state.expenses.unshift({id:Date.now(),amount:a,category:state.expInput.category,note:state.expInput.note,date:todayStr()});
+    save(KEYS.expenses,state.expenses);
+    setState({expInput:{amount:'',category:'Еда',note:''}});
+  },
+  delExpense: id => {
+    state.expenses=state.expenses.filter(e=>e.id!==id);
+    save(KEYS.expenses,state.expenses);
+    render();
+  },
+  fetchAiTips,
+
+  setTaskInput: (period,v) => { state.taskInput={...state.taskInput,[period]:v}; },
+  addTask: period => {
+    const text=state.taskInput[period].trim(); if(!text)return;
+    state.tasks[period].push({id:Date.now(),text,done:false,created:todayStr()});
+    save(KEYS.tasks,state.tasks);
+    setState({taskInput:{...state.taskInput,[period]:''}});
+  },
+  toggleTask: (period,id) => {
+    state.tasks[period]=state.tasks[period].map(t=>t.id===id?{...t,done:!t.done}:t);
+    save(KEYS.tasks,state.tasks); render();
+  },
+  delTask: (period,id) => {
+    state.tasks[period]=state.tasks[period].filter(t=>t.id!==id);
+    save(KEYS.tasks,state.tasks); render();
+  },
+
+  setBadInput:  v => setState({badInput:v}),
+  setGoodInput: v => setState({goodInput:v}),
+  addBadHabit: () => {
+    if(!state.badInput.trim())return;
+    state.badHabits.push({id:Date.now(),text:state.badInput.trim(),streak:0,lastChecked:null});
+    save(KEYS.badHabits,state.badHabits);
+    setState({badInput:''});
+  },
+  addGoodHabit: () => {
+    if(!state.goodInput.trim())return;
+    state.goodHabits.push({id:Date.now(),text:state.goodInput.trim(),streak:0,lastChecked:null});
+    save(KEYS.goodHabits,state.goodHabits);
+    setState({goodInput:''});
+  },
+  checkHabit: (type,id) => {
+    const arr = type==='bad'?state.badHabits:state.goodHabits;
+    const yesterday=new Date(); yesterday.setDate(yesterday.getDate()-1);
+    const yStr=yesterday.toISOString().split('T')[0];
+    const ts=todayStr();
+    arr.forEach(h=>{
+      if(h.id!==id)return;
+      if(h.lastChecked===ts)return;
+      h.streak = h.lastChecked===yStr ? h.streak+1 : 1;
+      h.lastChecked=ts;
+    });
+    if(type==='bad')save(KEYS.badHabits,state.badHabits);
+    else save(KEYS.goodHabits,state.goodHabits);
+    render();
+  },
+  delHabit: (type,id) => {
+    if(type==='bad'){state.badHabits=state.badHabits.filter(h=>h.id!==id);save(KEYS.badHabits,state.badHabits);}
+    else{state.goodHabits=state.goodHabits.filter(h=>h.id!==id);save(KEYS.goodHabits,state.goodHabits);}
+    render();
+  },
+
+  setIdeaTitle: v => setState({ideaInput:{...state.ideaInput,title:v}}),
+  setIdeaBody:  v => setState({ideaInput:{...state.ideaInput,body:v}}),
+  addIdea: () => {
+    if(!state.ideaInput.title.trim())return;
+    state.ideas.unshift({id:Date.now(),...state.ideaInput,date:todayStr(),starred:false});
+    save(KEYS.ideas,state.ideas);
+    setState({ideaInput:{title:'',body:''}});
+  },
+  toggleStar: id => {
+    state.ideas=state.ideas.map(i=>i.id===id?{...i,starred:!i.starred}:i);
+    save(KEYS.ideas,state.ideas); render();
+  },
+  delIdea: id => {
+    state.ideas=state.ideas.filter(i=>i.id!==id);
+    save(KEYS.ideas,state.ideas); render();
+  },
+};
+
+// ─── HTML builders ────────────────────────────────────────────────────────────
+const CATS = ['Еда','Транспорт','Развлечения','Одежда','Здоровье','Кофе/Рестораны','Подписки','Прочее'];
+
+function statCard(label,value,color,unit='₽') {
+  const display = typeof value==='number' ? fmtNum(value) : value;
+  const u = (typeof value==='number'&&unit) ? `<span class="stat-unit">${unit}</span>` : '';
+  return `<div class="stat-card" style="border-top:2px solid ${color}">
+    <div class="stat-label">${label}</div>
+    <div class="stat-value" style="color:${color}">${display}${u}</div>
+  </div>`;
+}
+
+function financeTab() {
+  const f=calcFinance();
+  const catOptions = CATS.map(c=>`<option${c===state.expInput.category?' selected':''}>${c}</option>`).join('');
+  const expRows = state.expenses.slice(0,20).map(e=>`
+    <div class="exp-row">
+      <span class="exp-cat">${e.category}</span>
+      <span class="exp-note">${e.note||'—'}</span>
+      <span class="exp-date">${fmtDate(e.date)}</span>
+      <span class="exp-amount">−${fmtNum(e.amount)}₽</span>
+      <button class="del-btn" onclick="_h.delExpense(${e.id})">×</button>
+    </div>`).join('');
+  const tipRows = state.aiTips.map((t,i)=>`
+    <div class="tip-item">
+      <div class="tip-num">${i+1}</div>
+      <div class="tip-text">${t}</div>
+    </div>`).join('');
+
+  return `<div class="section">
+    <div class="card">
+      <div class="card-title">💳 Мой доход</div>
+      <div class="row">
+        <input type="number" placeholder="Доход в месяц (₽)" value="${state.incomeInput}"
+          oninput="_h.setIncomeInput(this.value)" onkeydown="if(event.key==='Enter')_h.saveIncome()" />
+        <button class="btn" onclick="_h.saveIncome()">Сохранить</button>
+      </div>
+      ${state.income>0?`<div class="income-display">${fmtNum(state.income)} ₽ / мес</div>`:''}
+    </div>
+
+    <div class="stats-grid">
+      ${statCard('Сегодня',f.expToday,'#ef4444')}
+      ${statCard('Неделя',f.expWeek,'#f97316')}
+      ${statCard('Месяц',f.expMonth,'#0ea5e9')}
+      ${statCard('Прогноз/мес',f.forecast,'#8b5cf6')}
+    </div>
+
+    ${state.income>0?`<div class="stats-grid">
+      ${statCard('Сэкономлю/мес',f.savings,'#22c55e')}
+      ${statCard('Сэкономлю/день',f.dailySav,'#06b6d4')}
+      ${statCard('Ср. трата/день',f.dailyAvg,'#38bdf8')}
+      ${statCard('Хватит (дней)',f.daysEnough||'∞','#a78bfa','')}
+    </div>`:''}
+
+    <div class="card">
+      <div class="card-title">➕ Добавить трату</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="number" placeholder="Сумма ₽" value="${state.expInput.amount}"
+          style="flex:1 1 80px;min-width:80px" oninput="_h.setExpAmount(this.value)"
+          onkeydown="if(event.key==='Enter')_h.addExpense()" />
+        <select style="flex:1 1 120px" onchange="_h.setExpCat(this.value)">${catOptions}</select>
+        <input placeholder="Заметка (опционально)" value="${state.expInput.note}"
+          style="flex:2 1 140px" oninput="_h.setExpNote(this.value)"
+          onkeydown="if(event.key==='Enter')_h.addExpense()" />
+        <button class="btn" onclick="_h.addExpense()">Добавить</button>
+      </div>
+    </div>
+
+    ${state.expenses.length>0?`<div class="card">
+      <div class="card-title">📋 Последние траты</div>
+      <div class="expenses-list">${expRows}</div>
+    </div>`:''}
+
+    <div class="card">
+      <div class="flex-between">
+        <div class="card-title" style="margin-bottom:0">🤖 Советы ИИ</div>
+        <button class="btn btn-sm" onclick="_h.fetchAiTips()" ${state.loadingTips?'disabled':''}>
+          ${state.loadingTips?'Загрузка...':'Получить советы'}
+        </button>
+      </div>
+      <div style="margin-top:12px">
+        ${tipRows || `<div class="tip-placeholder">Нажми кнопку — ИИ проанализирует расходы и даст персональные советы</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function tasksTab() {
+  const periods = [
+    {key:'day',  label:'📅 На сегодня', color:'#ef4444'},
+    {key:'week', label:'🗓 На неделю',  color:'#f97316'},
+    {key:'month',label:'📆 На месяц',   color:'#eab308'},
+    {key:'year', label:'🎯 На год',     color:'#0ea5e9'},
+  ];
+  return `<div class="section">${periods.map(p=>{
+    const done=state.tasks[p.key].filter(t=>t.done).length;
+    const total=state.tasks[p.key].length;
+    const rows=state.tasks[p.key].map(t=>`
+      <div class="task-row">
+        <button class="check-btn${t.done?' done':''}" onclick="_h.toggleTask('${p.key}',${t.id})">${t.done?'✓':''}</button>
+        <span class="task-text${t.done?' done':''}">${t.text}</span>
+        <span class="task-date">${fmtDate(t.created)}</span>
+        <button class="del-btn" onclick="_h.delTask('${p.key}',${t.id})">×</button>
+      </div>`).join('');
+    return `<div class="card">
+      <div class="card-title" style="color:${p.color}">${p.label}</div>
+      <div class="row">
+        <input placeholder="Добавить задачу..." value="${state.taskInput[p.key]}"
+          oninput="_h.setTaskInput('${p.key}',this.value)"
+          onkeydown="if(event.key==='Enter')_h.addTask('${p.key}')" />
+        <button class="btn" style="background:${p.color};box-shadow:none" onclick="_h.addTask('${p.key}')">+</button>
+      </div>
+      ${total===0?'<div class="empty-hint">Нет задач — добавь первую!</div>':rows}
+      ${total>0?`<div class="progress-wrap">
+        <div class="progress-bar" style="width:${(done/total*100).toFixed(0)}%;background:${p.color}"></div>
+      </div>
+      <div class="progress-text">${done}/${total} выполнено</div>`:''}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function habitsTab() {
+  const ts=todayStr();
+  const badRows=state.badHabits.map(h=>`
+    <div class="habit-row">
+      <div class="habit-info">
+        <div class="habit-name">${h.text}</div>
+        <div class="habit-sub">${h.lastChecked===ts?'✅ Сегодня устоял':'Отметь день без привычки'}</div>
+      </div>
+      <div class="streak-badge">🔥 ${h.streak}д</div>
+      <button class="btn btn-sm${h.lastChecked===ts?' btn-green-dark':' btn-red'}" onclick="_h.checkHabit('bad',${h.id})">
+        ${h.lastChecked===ts?'Устоял ✓':'Не сорвался'}
+      </button>
+      <button class="del-btn" onclick="_h.delHabit('bad',${h.id})">×</button>
+    </div>`).join('');
+  const goodRows=state.goodHabits.map(h=>`
+    <div class="habit-row">
+      <div class="habit-info">
+        <div class="habit-name">${h.text}</div>
+        <div class="habit-sub">${h.lastChecked===ts?'✅ Выполнено сегодня':'Нажми, когда выполнишь'}</div>
+      </div>
+      <div class="streak-badge good">⚡ ${h.streak}д</div>
+      <button class="btn btn-sm${h.lastChecked===ts?' btn-green-dark':''}" onclick="_h.checkHabit('good',${h.id})">
+        ${h.lastChecked===ts?'Готово ✓':'Сделал'}
+      </button>
+      <button class="del-btn" onclick="_h.delHabit('good',${h.id})">×</button>
+    </div>`).join('');
+
+  return `<div class="section">
+    <div class="card">
+      <div class="card-title" style="color:#ef4444">🚫 Вредные привычки — избавляюсь</div>
+      <div class="row">
+        <input placeholder="Название вредной привычки..." value="${state.badInput}"
+          oninput="_h.setBadInput(this.value)" onkeydown="if(event.key==='Enter')_h.addBadHabit()" />
+        <button class="btn btn-red" onclick="_h.addBadHabit()">+</button>
+      </div>
+      ${state.badHabits.length===0?'<div class="empty-hint">Добавь привычки, от которых хочешь избавиться</div>':badRows}
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:#22c55e">✨ Полезные привычки — внедряю</div>
+      <div class="row">
+        <input placeholder="Название полезной привычки..." value="${state.goodInput}"
+          oninput="_h.setGoodInput(this.value)" onkeydown="if(event.key==='Enter')_h.addGoodHabit()" />
+        <button class="btn" onclick="_h.addGoodHabit()">+</button>
+      </div>
+      ${state.goodHabits.length===0?'<div class="empty-hint">Добавь привычки, которые хочешь развить</div>':goodRows}
+    </div>
+  </div>`;
+}
+
+function ideasTab() {
+  const sorted=[...state.ideas].sort((a,b)=>b.starred-a.starred);
+  const rows=sorted.map(i=>`
+    <div class="card idea-card" style="border-left:3px solid ${i.starred?'#22c55e':'transparent'}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div class="idea-title">${i.title}</div>
+          ${i.body?`<div class="idea-body">${i.body}</div>`:''}
+          <div class="idea-date">${fmtDate(i.date)}</div>
+        </div>
+        <div class="icon-actions">
+          <button class="star-btn${i.starred?' starred':''}" onclick="_h.toggleStar(${i.id})">★</button>
+          <button class="del-btn" style="font-size:22px" onclick="_h.delIdea(${i.id})">×</button>
+        </div>
+      </div>
+    </div>`).join('');
+
+  return `<div class="section">
+    <div class="card">
+      <div class="card-title">💡 Новая идея</div>
+      <input placeholder="Заголовок идеи..." value="${state.ideaInput.title}"
+        style="margin-bottom:8px;display:block;width:100%"
+        oninput="_h.setIdeaTitle(this.value)" />
+      <textarea placeholder="Опиши идею подробнее (опционально)..."
+        oninput="_h.setIdeaBody(this.value)">${state.ideaInput.body}</textarea>
+      <button class="btn btn-full" onclick="_h.addIdea()">Записать идею</button>
+    </div>
+    ${sorted.length===0?`<div class="card" style="text-align:center;padding:40px">
+      <div style="font-size:48px">💡</div>
+      <div style="color:#a3b8af;margin-top:12px">Здесь будут храниться твои идеи</div>
+    </div>`:rows}
+  </div>`;
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+const TABS = [
+  {id:'finance', label:'💰 Финансы'},
+  {id:'tasks',   label:'✅ Задачи'},
+  {id:'habits',  label:'🔄 Привычки'},
+  {id:'ideas',   label:'💡 Идеи'},
+];
+
+function render() {
+  const tabBtns = TABS.map(t=>`<button class="tab-btn${state.tab===t.id?' active':''}" onclick="_h.setTab('${t.id}')">${t.label}</button>`).join('');
+  const dateStr = new Date().toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'long'});
+  const tabContent = {finance:financeTab, tasks:tasksTab, habits:habitsTab, ideas:ideasTab}[state.tab]();
+
+  document.getElementById('root').innerHTML = `
+    <div id="app">
+      <div class="header">
+        <div class="header-inner">
+          <div class="logo-area">
+            <div class="logo-icon">B</div>
+            <div>
+              <div class="logo-name">BAISANGUR</div>
+              <div class="logo-sub">Personal Dashboard</div>
+            </div>
+          </div>
+          <div class="date-chip">${dateStr}</div>
+        </div>
+        <div class="tab-bar">${tabBtns}</div>
+      </div>
+      <div class="content">${tabContent}</div>
+    </div>`;
+}
+
+render();
+</script>
+</body>
+</html>
